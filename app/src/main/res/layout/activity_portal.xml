@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    tools:context=".PortalActivity">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/portal_title"
+        android:textSize="24sp" />
+    <Button
+        android:id="@+id/game15_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/portal_game15"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="10dp"
+        android:textSize="20sp" />
+    <Button
+        android:id="@+id/inet_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/portal_inet"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="10dp"
+        android:textSize="20sp" />
+    <Button
+        android:id="@+id/chat_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/portal_chat"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="10dp"
+        android:textSize="20sp" />
+</LinearLayout>

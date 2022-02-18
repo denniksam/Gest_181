@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Gest</string>
+    <string name="invalid_move">Invalid move</string>
+
+    <string name="portal_title">Android portal</string>
+    <string name="portal_game15">Game 15 (Swipes)</string>
+    <string name="portal_inet">Internet</string>
+    <string name="portal_chat">Chat</string>
+
+    <string name="count_message">Загружено курсов: %d</string>
+    <string name="btn_date">Загрузить курс</string>
+
+    <string name="bank_url">https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?date=%s&amp;json</string>
+</resources>
