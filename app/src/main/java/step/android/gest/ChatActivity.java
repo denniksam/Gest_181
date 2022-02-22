@@ -3,11 +3,17 @@ package step.android.gest;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 
 public class ChatActivity extends AppCompatActivity {
@@ -16,6 +22,33 @@ public class ChatActivity extends AppCompatActivity {
     private EditText etAuthor ;
     private EditText etMessage ;
 
+    // Data Context
+    private ArrayList<ChatMessage> messages ;
+
+    // URL response buffer
+    private String urlResponse ;
+
+    // URL response loader
+    private final Runnable loadUrlResponse = () -> {
+        try( InputStream stream =
+                 new URL( "http://chat.momentfor.fun/" )
+                .openStream()
+        ) {
+            StringBuilder sb = new StringBuilder() ;
+            int sym ;
+            while( ( sym = stream.read() ) != -1 ) {
+                sb.append( (char) sym ) ;
+            }
+            urlResponse = new String(
+                    sb.toString().getBytes(StandardCharsets.ISO_8859_1),
+                    StandardCharsets.UTF_8
+            ) ;
+            runOnUiThread( () -> { tvChat.setText( urlResponse ) ; } ) ;
+        }
+        catch( Exception ex ) {
+            Log.e( "loadUrlResponse: ", ex.getMessage() ) ;
+        }
+    } ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +68,8 @@ public class ChatActivity extends AppCompatActivity {
             }
             return true ;
         } ) ;
+
+        new Thread( loadUrlResponse ).start() ;
     }
 
     private void hideSoftKeyboard() {
