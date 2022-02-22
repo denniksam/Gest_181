@@ -3,12 +3,17 @@ package step.android.gest;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -23,12 +28,46 @@ public class ChatActivity extends AppCompatActivity {
     private EditText etMessage ;
 
     // Data Context
-    private ArrayList<ChatMessage> messages ;
+    private final ArrayList<ChatMessage> messages = new ArrayList<>() ;
 
     // URL response buffer
     private String urlResponse ;
 
-    // URL response loader
+    // display mapped messages: messages -> View
+    private final Runnable showMessages = () -> {
+        StringBuilder sb = new StringBuilder() ;
+        for( ChatMessage message : messages ) {
+            sb.append( message.toChatString() ) ;
+            sb.append( '\n' ) ;
+        }
+        tvChat.setText( sb.toString() ) ;
+    } ;
+
+    // URL response mapper:  String -> JSON -> messages
+    private final Runnable mapUrlResponse = () -> {
+        try {
+            JSONObject response = new JSONObject( urlResponse ) ;
+            int status = response.getInt( "status" ) ;
+            if( status == 1 ) {
+                JSONArray arr = response.getJSONArray( "data" ) ;
+                messages.clear() ;
+                for( int i = 0; i < arr.length(); ++i ) {
+                    messages.add(
+                            new ChatMessage(
+                                    arr.getJSONObject( i ) ) ) ;
+                }
+                runOnUiThread( showMessages ) ;
+            }
+            else {
+                Log.e( "mapUrlResponse: ", "Bad response status " + status ) ;
+            }
+        }
+        catch( Exception ex ) {
+            Log.e( "mapUrlResponse: ", ex.getMessage() ) ;
+        }
+    } ;
+
+    // URL response loader: URL -> String
     private final Runnable loadUrlResponse = () -> {
         try( InputStream stream =
                  new URL( "http://chat.momentfor.fun/" )
@@ -43,7 +82,7 @@ public class ChatActivity extends AppCompatActivity {
                     sb.toString().getBytes(StandardCharsets.ISO_8859_1),
                     StandardCharsets.UTF_8
             ) ;
-            runOnUiThread( () -> { tvChat.setText( urlResponse ) ; } ) ;
+            new Thread( mapUrlResponse ).start() ;
         }
         catch( Exception ex ) {
             Log.e( "loadUrlResponse: ", ex.getMessage() ) ;
@@ -73,10 +112,12 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void hideSoftKeyboard() {
+        View focusedView = getCurrentFocus() ;
+        if( focusedView != null )
         ( (InputMethodManager)
             getSystemService( INPUT_METHOD_SERVICE ) )
                 .hideSoftInputFromWindow(
-                        getCurrentFocus().getWindowToken(), 0 ) ;
+                        focusedView.getWindowToken(), 0 ) ;
     }
 }
 /*

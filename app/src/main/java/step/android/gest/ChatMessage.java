@@ -36,6 +36,16 @@ public class ChatMessage {
                 '}';
     }
 
+    public String toChatString() {
+        String txt = getText() ;
+        if( txt.length() > 20 )
+            txt = txt.substring( 0, 20 ) + "..." ;
+
+        return dtParser.format( moment )
+                + " " + getAuthor()
+                + ": " + txt ;
+    }
+
     public int getId() {
         return id;
     }
