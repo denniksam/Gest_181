@@ -17,12 +17,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class ChatActivity extends AppCompatActivity {
@@ -57,12 +59,42 @@ public class ChatActivity extends AppCompatActivity {
             int status = response.getInt( "status" ) ;
             if( status == 1 ) {
                 JSONArray arr = response.getJSONArray( "data" ) ;
+                boolean isUpdated = false ;
+                for( int i = 0; i < arr.length(); ++i ) {
+                    JSONObject obj = arr.getJSONObject( i ) ;
+                    if( ! messagesContain( obj ) ) {
+                        messages.add(
+                                new ChatMessage( obj ) ) ;
+                        isUpdated = true ;
+                    }
+                }
+                if( isUpdated ) {
+                    Collections.sort( messages ) ;
+                    runOnUiThread( showMessages ) ;
+                    runOnUiThread( this::showMessagesInScroll ) ;
+                }
+            }
+            else {
+                Log.e( "mapUrlResponse: ", "Bad response status " + status ) ;
+            }
+        }
+        catch( Exception ex ) {
+            Log.e( "mapUrlResponse: ", ex.getMessage() ) ;
+        }
+    } ;
+    private final Runnable mapUrlResponseOld = () -> {
+        try {
+            JSONObject response = new JSONObject( urlResponse ) ;
+            int status = response.getInt( "status" ) ;
+            if( status == 1 ) {
+                JSONArray arr = response.getJSONArray( "data" ) ;
                 messages.clear() ;
                 for( int i = 0; i < arr.length(); ++i ) {
                     messages.add(
                             new ChatMessage(
                                     arr.getJSONObject( i ) ) ) ;
                 }
+                Collections.sort( messages );
                 runOnUiThread( showMessages ) ;
                 runOnUiThread( this::showMessagesInScroll ) ;
             }
@@ -176,7 +208,7 @@ public class ChatActivity extends AppCompatActivity {
         layoutParams.setMargins( 5,5,5,5 ) ;
         chatContainer.removeAllViews() ;  // clear
         for( ChatMessage message : messages ) {
-            TextView txt = new TextView(this);
+            TextView txt = new TextView(this ) ;
             txt.setText( message.toChatString() ) ;
             txt.setBackground( AppCompatResources.getDrawable(
                     getApplicationContext(),
@@ -185,11 +217,43 @@ public class ChatActivity extends AppCompatActivity {
             txt.setPadding( 5, 5, 5, 5 ) ;
             chatContainer.addView( txt ) ;
         }
-        ((ScrollView)chatContainer.getParent()).fullScroll(
-                ScrollView.FOCUS_DOWN
-        );
+        /* chatContainer.invalidate() ;
+        chatContainer.requestLayout() ;
+        chatContainer.forceLayout() ;
+        ScrollView scrollView = (ScrollView) chatContainer.getParent() ;
+        scrollView.forceLayout() ;
+        scrollView.fullScroll( ScrollView.FOCUS_DOWN ) ; */
+
+        new Thread( () ->
+            runOnUiThread( () ->
+                ((ScrollView)chatContainer.getParent()).fullScroll(
+                        ScrollView.FOCUS_DOWN
+                ) ) ).start() ;
+    }
+
+    private boolean messagesContain( JSONObject obj ) throws JSONException {
+        for( ChatMessage message : messages ) {
+            if( message.getId() == obj.getInt( "id" ) ) {
+                return true ;
+            }
+        }
+        return false ;
     }
 }
+/*
+Задания:
+Поменять порядок вывода ScrollView: последние сообщения снизу
+При получении сообщений (после отправки) проверять:
+ есть ли они уже в коллекции (messages) -
+  вместо очистки и пересборки проверять на наличие и добавлять,
+  если сообщение новое
+ также поступать при отображении - если сообщение отображено,
+  то пропускать его, не пересоздавать текст
+* Сообщения, в которых автор-отправитель (свои сообщения)
+ выравнивать по другому краю
+
+ */
+
 /*
     Д.З. По нажатию на кнопку "Отправить" сформировать запрос (строку)
     к API http://chat.momentfor.fun/?author=...&msg=...

@@ -8,11 +8,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class ChatMessage {
+public class ChatMessage
+        implements Comparable<ChatMessage> {
+
+    // ORM fields
     private int    id;
     private String author;
     private String text;
     private Date   moment;
+
+    // Inner fields
+    private boolean isDisplayed ;
+
 
     private final static SimpleDateFormat
         dtParser = new SimpleDateFormat(
@@ -24,6 +31,12 @@ public class ChatMessage {
         setAuthor( obj.getString( "author" ) ) ;
         setText( obj.getString( "text" ) ) ;
         setMoment( obj.getString( "moment" ) ) ;
+        setDisplayed( false ) ;
+    }
+
+    @Override
+    public int compareTo( ChatMessage other ) {
+        return this.moment.compareTo( other.getMoment() ) ;
     }
 
     @Override
@@ -79,6 +92,14 @@ public class ChatMessage {
     }
 
     public void setMoment(String moment) throws ParseException {
-        this.moment = dtParser.parse( moment ) ;
+        this.setMoment( dtParser.parse( moment ) ) ;
+    }
+
+    public boolean isDisplayed() {
+        return isDisplayed;
+    }
+
+    public void setDisplayed(boolean displayed) {
+        isDisplayed = displayed;
     }
 }
