@@ -11,4 +11,10 @@
     <string name="btn_date">Загрузить курс</string>
 
     <string name="bank_url">https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?date=%s&amp;json</string>
+
+    <string name="chat_author_empty">Укажите автора</string>
+    <string name="chat_message_empty">Напишите сообщение</string>
+    <string name="chat_url_send">http://chat.momentfor.fun/?author=%s&amp;msg=%s</string>
+    <string name="chat_url_get">http://chat.momentfor.fun/</string>
+
 </resources>

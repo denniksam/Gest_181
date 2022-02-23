@@ -1,14 +1,18 @@
 package step.android.gest;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
 
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,10 +30,13 @@ public class ChatActivity extends AppCompatActivity {
     private TextView tvChat ;
     private EditText etAuthor ;
     private EditText etMessage ;
+    private LinearLayout chatContainer ;
 
     // Data Context
     private final ArrayList<ChatMessage> messages = new ArrayList<>() ;
 
+    // URL:
+    String chatUrl ;
     // URL response buffer
     private String urlResponse ;
 
@@ -57,6 +64,7 @@ public class ChatActivity extends AppCompatActivity {
                                     arr.getJSONObject( i ) ) ) ;
                 }
                 runOnUiThread( showMessages ) ;
+                runOnUiThread( this::showMessagesInScroll ) ;
             }
             else {
                 Log.e( "mapUrlResponse: ", "Bad response status " + status ) ;
@@ -70,7 +78,7 @@ public class ChatActivity extends AppCompatActivity {
     // URL response loader: URL -> String
     private final Runnable loadUrlResponse = () -> {
         try( InputStream stream =
-                 new URL( "http://chat.momentfor.fun/" )
+                 new URL( chatUrl )
                 .openStream()
         ) {
             StringBuilder sb = new StringBuilder() ;
@@ -97,6 +105,26 @@ public class ChatActivity extends AppCompatActivity {
         tvChat    = findViewById( R.id.tvChat ) ;
         etAuthor  = findViewById( R.id.etAuthor ) ;
         etMessage = findViewById( R.id.etMessage ) ;
+        chatContainer = findViewById( R.id.chatContainer ) ;
+
+        /*
+        // ScrollView Demo
+        LinearLayout.LayoutParams layoutParams = 
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, 
+                        LinearLayout.LayoutParams.WRAP_CONTENT ) ;
+        layoutParams.setMargins(5,5,5,5);
+        chatContainer.removeAllViews() ;  // clear
+        for( int i = 0; i < 10; ++i) {
+            TextView txt = new TextView(this);
+            txt.setText( "" + i ) ;
+            txt.setBackground( AppCompatResources.getDrawable(
+                    getApplicationContext(),
+                    R.drawable.border ) ) ;
+            txt.setLayoutParams(layoutParams);
+            txt.setPadding( 5, 5, 5, 5 ) ;
+            chatContainer.addView( txt ) ;         
+        } */
 
         findViewById( R.id.chatLayout ).setOnTouchListener( (v, event) -> {
             if( event.getAction() == MotionEvent.ACTION_UP ) {
@@ -107,7 +135,27 @@ public class ChatActivity extends AppCompatActivity {
             }
             return true ;
         } ) ;
+        findViewById( R.id.buttonSend ).setOnClickListener( this::sendButtonClick ) ;
 
+        chatUrl = getString( R.string.chat_url_get ) ;
+        new Thread( loadUrlResponse ).start() ;
+    }
+    
+    private void sendButtonClick( View v ) {
+        String author = etAuthor.getText().toString() ;
+        if( author.length() == 0 ) {
+            Toast.makeText(this, R.string.chat_author_empty, Toast.LENGTH_SHORT).show();
+            return ;
+        }
+        String message = etMessage.getText().toString() ;
+        if( message.length() == 0 ) {
+            Toast.makeText(this, R.string.chat_message_empty, Toast.LENGTH_SHORT).show();
+            return ;
+        }
+        chatUrl = getString(
+                R.string.chat_url_send,
+                author,
+                message ) ;
         new Thread( loadUrlResponse ).start() ;
     }
 
@@ -118,6 +166,28 @@ public class ChatActivity extends AppCompatActivity {
             getSystemService( INPUT_METHOD_SERVICE ) )
                 .hideSoftInputFromWindow(
                         focusedView.getWindowToken(), 0 ) ;
+    }
+
+    private void showMessagesInScroll() {
+        LinearLayout.LayoutParams layoutParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT ) ;
+        layoutParams.setMargins( 5,5,5,5 ) ;
+        chatContainer.removeAllViews() ;  // clear
+        for( ChatMessage message : messages ) {
+            TextView txt = new TextView(this);
+            txt.setText( message.toChatString() ) ;
+            txt.setBackground( AppCompatResources.getDrawable(
+                    getApplicationContext(),
+                    R.drawable.border ) ) ;
+            txt.setLayoutParams(layoutParams);
+            txt.setPadding( 5, 5, 5, 5 ) ;
+            chatContainer.addView( txt ) ;
+        }
+        ((ScrollView)chatContainer.getParent()).fullScroll(
+                ScrollView.FOCUS_DOWN
+        );
     }
 }
 /*
