@@ -4,11 +4,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -29,7 +28,6 @@ import java.util.Collections;
 
 public class ChatActivity extends AppCompatActivity {
 
-    private TextView tvChat ;
     private EditText etAuthor ;
     private EditText etMessage ;
     private LinearLayout chatContainer ;
@@ -41,16 +39,6 @@ public class ChatActivity extends AppCompatActivity {
     String chatUrl ;
     // URL response buffer
     private String urlResponse ;
-
-    // display mapped messages: messages -> View
-    private final Runnable showMessages = () -> {
-        StringBuilder sb = new StringBuilder() ;
-        for( ChatMessage message : messages ) {
-            sb.append( message.toChatString() ) ;
-            sb.append( '\n' ) ;
-        }
-        tvChat.setText( sb.toString() ) ;
-    } ;
 
     // URL response mapper:  String -> JSON -> messages
     private final Runnable mapUrlResponse = () -> {
@@ -70,7 +58,6 @@ public class ChatActivity extends AppCompatActivity {
                 }
                 if( isUpdated ) {
                     Collections.sort( messages ) ;
-                    runOnUiThread( showMessages ) ;
                     runOnUiThread( this::showMessagesInScroll ) ;
                 }
             }
@@ -82,30 +69,7 @@ public class ChatActivity extends AppCompatActivity {
             Log.e( "mapUrlResponse: ", ex.getMessage() ) ;
         }
     } ;
-    private final Runnable mapUrlResponseOld = () -> {
-        try {
-            JSONObject response = new JSONObject( urlResponse ) ;
-            int status = response.getInt( "status" ) ;
-            if( status == 1 ) {
-                JSONArray arr = response.getJSONArray( "data" ) ;
-                messages.clear() ;
-                for( int i = 0; i < arr.length(); ++i ) {
-                    messages.add(
-                            new ChatMessage(
-                                    arr.getJSONObject( i ) ) ) ;
-                }
-                Collections.sort( messages );
-                runOnUiThread( showMessages ) ;
-                runOnUiThread( this::showMessagesInScroll ) ;
-            }
-            else {
-                Log.e( "mapUrlResponse: ", "Bad response status " + status ) ;
-            }
-        }
-        catch( Exception ex ) {
-            Log.e( "mapUrlResponse: ", ex.getMessage() ) ;
-        }
-    } ;
+
 
     // URL response loader: URL -> String
     private final Runnable loadUrlResponse = () -> {
@@ -134,29 +98,10 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        tvChat    = findViewById( R.id.tvChat ) ;
         etAuthor  = findViewById( R.id.etAuthor ) ;
         etMessage = findViewById( R.id.etMessage ) ;
         chatContainer = findViewById( R.id.chatContainer ) ;
 
-        /*
-        // ScrollView Demo
-        LinearLayout.LayoutParams layoutParams = 
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, 
-                        LinearLayout.LayoutParams.WRAP_CONTENT ) ;
-        layoutParams.setMargins(5,5,5,5);
-        chatContainer.removeAllViews() ;  // clear
-        for( int i = 0; i < 10; ++i) {
-            TextView txt = new TextView(this);
-            txt.setText( "" + i ) ;
-            txt.setBackground( AppCompatResources.getDrawable(
-                    getApplicationContext(),
-                    R.drawable.border ) ) ;
-            txt.setLayoutParams(layoutParams);
-            txt.setPadding( 5, 5, 5, 5 ) ;
-            chatContainer.addView( txt ) ;         
-        } */
 
         findViewById( R.id.chatLayout ).setOnTouchListener( (v, event) -> {
             if( event.getAction() == MotionEvent.ACTION_UP ) {
@@ -206,6 +151,14 @@ public class ChatActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.WRAP_CONTENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT ) ;
         layoutParams.setMargins( 5,5,5,5 ) ;
+
+        LinearLayout.LayoutParams myLayoutParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT ) ;
+        myLayoutParams.setMargins( 5,5,5,5 ) ;
+        myLayoutParams.gravity = Gravity.END ;
+
         chatContainer.removeAllViews() ;  // clear
         for( ChatMessage message : messages ) {
             TextView txt = new TextView(this ) ;
@@ -213,16 +166,15 @@ public class ChatActivity extends AppCompatActivity {
             txt.setBackground( AppCompatResources.getDrawable(
                     getApplicationContext(),
                     R.drawable.border ) ) ;
-            txt.setLayoutParams(layoutParams);
             txt.setPadding( 5, 5, 5, 5 ) ;
+            if( message.getAuthor().contentEquals( etAuthor.getText() ) ) {
+                txt.setLayoutParams( myLayoutParams ) ;
+            }
+            else {
+                txt.setLayoutParams( layoutParams ) ;
+            }
             chatContainer.addView( txt ) ;
         }
-        /* chatContainer.invalidate() ;
-        chatContainer.requestLayout() ;
-        chatContainer.forceLayout() ;
-        ScrollView scrollView = (ScrollView) chatContainer.getParent() ;
-        scrollView.forceLayout() ;
-        scrollView.fullScroll( ScrollView.FOCUS_DOWN ) ; */
 
         new Thread( () ->
             runOnUiThread( () ->
