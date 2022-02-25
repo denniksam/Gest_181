@@ -3,7 +3,9 @@ package step.android.gest;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -31,6 +33,8 @@ public class ChatActivity extends AppCompatActivity {
     private EditText etAuthor ;
     private EditText etMessage ;
     private LinearLayout chatContainer ;
+
+    private Handler handler ;
 
     // Data Context
     private final ArrayList<ChatMessage> messages = new ArrayList<>() ;
@@ -88,6 +92,9 @@ public class ChatActivity extends AppCompatActivity {
             ) ;
             new Thread( mapUrlResponse ).start() ;
         }
+        catch( android.os.NetworkOnMainThreadException ignored ) {
+            Log.e( "loadUrlResponse: ", "NetworkOnMainThreadException" ) ;
+        }
         catch( Exception ex ) {
             Log.e( "loadUrlResponse: ", ex.getMessage() ) ;
         }
@@ -102,6 +109,7 @@ public class ChatActivity extends AppCompatActivity {
         etMessage = findViewById( R.id.etMessage ) ;
         chatContainer = findViewById( R.id.chatContainer ) ;
 
+        handler = new Handler() ;
 
         findViewById( R.id.chatLayout ).setOnTouchListener( (v, event) -> {
             if( event.getAction() == MotionEvent.ACTION_UP ) {
@@ -114,8 +122,13 @@ public class ChatActivity extends AppCompatActivity {
         } ) ;
         findViewById( R.id.buttonSend ).setOnClickListener( this::sendButtonClick ) ;
 
+        handler.post( this::updateChat ) ;
+    }
+
+    private void updateChat() {
         chatUrl = getString( R.string.chat_url_get ) ;
         new Thread( loadUrlResponse ).start() ;
+        handler.postDelayed( this::updateChat, 1000 ) ;
     }
     
     private void sendButtonClick( View v ) {
@@ -129,6 +142,7 @@ public class ChatActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.chat_message_empty, Toast.LENGTH_SHORT).show();
             return ;
         }
+        // message += new String(Character.toChars(0x1F349));
         chatUrl = getString(
                 R.string.chat_url_send,
                 author,
@@ -159,21 +173,33 @@ public class ChatActivity extends AppCompatActivity {
         myLayoutParams.setMargins( 5,5,5,5 ) ;
         myLayoutParams.gravity = Gravity.END ;
 
-        chatContainer.removeAllViews() ;  // clear
+        Drawable myBackground = AppCompatResources.getDrawable(
+                getApplicationContext(),
+                R.drawable.chat_msg_my ) ;
+        Drawable otherBackground = AppCompatResources.getDrawable(
+                getApplicationContext(),
+                R.drawable.chat_msg_other ) ;
+
+        // chatContainer.removeAllViews() ;  // clear
         for( ChatMessage message : messages ) {
-            TextView txt = new TextView(this ) ;
-            txt.setText( message.toChatString() ) ;
-            txt.setBackground( AppCompatResources.getDrawable(
-                    getApplicationContext(),
-                    R.drawable.border ) ) ;
-            txt.setPadding( 5, 5, 5, 5 ) ;
-            if( message.getAuthor().contentEquals( etAuthor.getText() ) ) {
-                txt.setLayoutParams( myLayoutParams ) ;
+            if( ! message.isDisplayed() ) {
+                TextView txt = new TextView(this);
+                txt.setTag( message ) ;
+                txt.setText( message.toChatString()
+                        .replaceAll( ":\\)", new String(Character.toChars(0x1F600))) ) ;
+                txt.setPadding(5, 5, 5, 5);
+                if (message.getAuthor().contentEquals(etAuthor.getText())) {
+                    txt.setLayoutParams(myLayoutParams);
+                    txt.setBackground(myBackground);
+                } else {
+                    txt.setLayoutParams(layoutParams);
+                    txt.setBackground(otherBackground);
+                }
+                txt.setOnClickListener( this::messageClick ) ;
+                txt.setOnLongClickListener( this::messageLongClick ) ;
+                chatContainer.addView( txt ) ;
+                message.setDisplayed( true ) ;
             }
-            else {
-                txt.setLayoutParams( layoutParams ) ;
-            }
-            chatContainer.addView( txt ) ;
         }
 
         new Thread( () ->
@@ -181,6 +207,20 @@ public class ChatActivity extends AppCompatActivity {
                 ((ScrollView)chatContainer.getParent()).fullScroll(
                         ScrollView.FOCUS_DOWN
                 ) ) ).start() ;
+    }
+
+    private boolean messageLongClick( View v ) {
+        chatContainer.removeView( v ) ;
+        return true ;
+    }
+
+    private void messageClick( View v ) {
+        ChatMessage msg = (ChatMessage) v.getTag() ;
+        if( msg == null ) return ;
+        TextView txt = (TextView) v ;
+        // if( txt == null ) return ;
+
+        txt.setText( msg.toFullChatString() ) ;
     }
 
     private boolean messagesContain( JSONObject obj ) throws JSONException {
@@ -192,6 +232,20 @@ public class ChatActivity extends AppCompatActivity {
         return false ;
     }
 }
+/*
+Удаление сообщений: будем считать сообщение удаленным
+ если его дата == "2000-01-01". Реализовать возможность
+ удаления, отображения "Удалено" в чате (нашем)
+ Ограничить возможность удаления только своих сообщений
+ Выводить диалог подтверждение удаления
+
+* Символы эмоций: в сообщение добавляются "коды" эмоций ":)"
+ а при выводе они заменяются на Юникод-символы
+ .replaceAll(
+    ":\\)",  // с учетом экранирования ")" в регулярном выражении
+    new String(Character.toChars(0x1F600))
+  )
+ */
 /*
 Задания:
 Поменять порядок вывода ScrollView: последние сообщения снизу

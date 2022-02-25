@@ -13,4 +13,6 @@
     <color name="cell_text">#6BE0EF</color>
 
     <color name="chat_border">#6BE0EF</color>
+    <color name="chat_msg_my">#0077D6</color>
+    <color name="chat_msg_other">#FF9800</color>
 </resources>

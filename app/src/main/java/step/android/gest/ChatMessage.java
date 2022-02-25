@@ -59,6 +59,12 @@ public class ChatMessage
                 + ": " + txt ;
     }
 
+    public String toFullChatString() {
+        return dtParser.format( moment )
+                + " " + getAuthor()
+                + ": " + getText() ;
+    }
+
     public int getId() {
         return id;
     }
